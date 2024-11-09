@@ -17,12 +17,11 @@ ma = Marshmallow(app) # Gives access to data parsing and validation
 
 # Class schema for Members
 class MemberSchema(ma.Schema):
-    id = fields.Integer(required=True)
     name = fields.String(required=True) 
     age = fields.Integer(required=True)
 
     class Meta:
-        fields = ("id", "name", "age")
+        fields = ("name", "age")
 
 member_schema = MemberSchema()
 members_schema = MemberSchema(many=True)
@@ -47,7 +46,7 @@ class Member(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
     age = db.Column(db.Integer, nullable=False)
-    workout_sessions = db.relationship('WorkoutSession', backref='member')
+    workout_sessions = db.relationship('WorkoutSession', backref='member_ref')
 
 # Class Model for Workout Sessions
 class WorkoutSession(db.Model):
@@ -56,8 +55,8 @@ class WorkoutSession(db.Model):
     member_id = db.Column(db.Integer, db.ForeignKey('Members.id'))
     session_date = db.Column(db.Date, nullable=False)
     session_time = db.Column(db.Time, nullable=False)
-    activity = db.Column(db.String, nullable=False)
-    member = db.relationship('Member', backref='workoutsession')
+    activity = db.Column(db.String(255), nullable=False)
+    member = db.relationship('Member', backref='workoutsession_ref')
 
 # Route and method to Add New Member using POST
 @app.route("/members", methods=["POST"])
@@ -68,7 +67,7 @@ def new_member():
         return jsonify(err.messages), 400 # Jsonify error with type indicator
     
     # Adding customer info into a variable for query execution
-    new_member = Member(id=member_data['id'], name=member_data['name'], age=member_data['age'])
+    new_member = Member(name=member_data['name'], age=member_data['age'])
     db.session.add(new_member) # Execute query to add new member
     db.session.commit() # Commit changes to the database
     return jsonify({"message": "New Member added successfully."}), 201
@@ -161,3 +160,8 @@ def delete_workout(session_id, member_id):
     db.session.commit()
     return jsonify({"message": "Workout session was successfully removed."}), 200
 
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)
